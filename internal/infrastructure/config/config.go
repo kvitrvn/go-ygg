@@ -23,7 +23,8 @@ type DatabaseConfig struct {
 }
 
 type LogConfig struct {
-	Level string `mapstructure:"level"`
+	Level  string `mapstructure:"level"`
+	Format string `mapstructure:"format"`
 }
 
 // DefaultViper creates a Viper instance with sensible defaults and env var support.
@@ -32,6 +33,7 @@ func DefaultViper() *viper.Viper {
 	v.SetDefault("server.host", "0.0.0.0")
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("log.level", "info")
+	v.SetDefault("log.format", "json")
 	v.SetEnvPrefix("APP")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()

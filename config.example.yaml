@@ -10,4 +10,5 @@ database:
   dsn: ""
 
 log:
-  level: "info"  # debug | info | warn | error
+  level: "info"    # debug | info | warn | error
+  format: "json"   # json | text

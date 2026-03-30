@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	cfgFile  string
-	logLevel string
-	v        *viper.Viper
+	cfgFile   string
+	logLevel  string
+	logFormat string
+	v         *viper.Viper
 )
 
 // Execute is the entry point called from main.
@@ -39,6 +40,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default: ./config.yaml)")
 	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level: debug|info|warn|error")
+	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "json", "log format: json|text")
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(migrateCmd)
@@ -61,11 +63,11 @@ func initConfig(_ *cobra.Command) error {
 		}
 	}
 
-	setupLogger(logLevel)
+	setupLogger(logLevel, logFormat)
 	return nil
 }
 
-func setupLogger(level string) {
+func setupLogger(level, format string) {
 	var l slog.Level
 	switch strings.ToLower(level) {
 	case "debug":
@@ -77,6 +79,15 @@ func setupLogger(level string) {
 	default:
 		l = slog.LevelInfo
 	}
-	handler := slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{Level: l})
-	slog.SetDefault(slog.New(handler))
+
+	opts := &slog.HandlerOptions{Level: l}
+
+	var h slog.Handler
+	if strings.ToLower(format) == "text" {
+		h = slog.NewTextHandler(os.Stderr, opts)
+	} else {
+		h = slog.NewJSONHandler(os.Stderr, opts)
+	}
+
+	slog.SetDefault(slog.New(h))
 }
