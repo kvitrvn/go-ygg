@@ -14,10 +14,8 @@ import (
 )
 
 var (
-	cfgFile   string
-	logLevel  string
-	logFormat string
-	v         *viper.Viper
+	cfgFile string
+	v       *viper.Viper
 )
 
 // Execute is the entry point called from main.
@@ -39,8 +37,11 @@ func init() {
 	v = appconfig.DefaultViper()
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default: ./config.yaml)")
-	rootCmd.PersistentFlags().StringVar(&logLevel, "log-level", "info", "log level: debug|info|warn|error")
-	rootCmd.PersistentFlags().StringVar(&logFormat, "log-format", "json", "log format: json|text")
+	rootCmd.PersistentFlags().String("log-level", "", "log level: debug|info|warn|error (overrides config and APP_LOG_LEVEL)")
+	rootCmd.PersistentFlags().String("log-format", "", "log format: json|text (overrides config and APP_LOG_FORMAT)")
+
+	_ = v.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level"))
+	_ = v.BindPFlag("log.format", rootCmd.PersistentFlags().Lookup("log-format"))
 
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(migrateCmd)
@@ -63,7 +64,7 @@ func initConfig(_ *cobra.Command) error {
 		}
 	}
 
-	setupLogger(logLevel, logFormat)
+	setupLogger(v.GetString("log.level"), v.GetString("log.format"))
 	return nil
 }
 
