@@ -81,4 +81,4 @@ internal/
 
 ## License
 
-MIT
+MIT — see [LICENSE.md](LICENSE.md)
