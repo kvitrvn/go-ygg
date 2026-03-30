@@ -1,0 +1,8 @@
+-- 000001_init.up.sql
+-- Add your initial schema here.
+-- Example:
+-- CREATE TABLE examples (
+--     id   TEXT PRIMARY KEY,
+--     name TEXT NOT NULL,
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+-- );

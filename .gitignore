@@ -1,0 +1,29 @@
+# Binary
+bin/
+
+# Configuration (contains secrets)
+config.yaml
+*.local.yaml
+
+# Test & coverage
+*.test
+coverage.out
+coverage.html
+
+# Go build cache
+/vendor/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
