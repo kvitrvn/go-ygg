@@ -7,16 +7,18 @@ import (
 	domain "github.com/kvitrvn/go-ygg/internal/domain/example"
 )
 
-// TODO: Add your DB driver blank import here, for example:
+// TODO: Add your DB driver. Example with pgx v5:
 //
-//	_ "github.com/golang-migrate/migrate/v4/database/postgres"
-//	_ "github.com/lib/pq"
+//	import (
+//	    "github.com/jackc/pgx/v5/pgxpool"
+//	    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+//	)
 //
-// Then replace the stub methods with real DB queries.
+// Then inject *pgxpool.Pool and replace the stub methods with real queries.
 
 // ExampleRepository implements domain.Repository.
 type ExampleRepository struct {
-	// db *sql.DB  ← inject your DB connection
+	// pool *pgxpool.Pool
 }
 
 func NewExampleRepository() *ExampleRepository {

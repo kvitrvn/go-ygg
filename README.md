@@ -71,13 +71,23 @@ internal/
 └── interfaces/      # CLI (Cobra) + HTTP handlers (inbound adapters)
 ```
 
-## Adding a DB driver
+## Adding a DB driver (PostgreSQL example with pgx)
 
-1. Add the blank import in `internal/infrastructure/persistence/`:
-   ```go
-   _ "github.com/golang-migrate/migrate/v4/database/postgres"
-   ```
-2. `go get github.com/golang-migrate/migrate/v4/database/postgres`
+```bash
+go get github.com/jackc/pgx/v5
+go get github.com/golang-migrate/migrate/v4/database/pgx/v5
+```
+
+In `internal/infrastructure/persistence/`, add the blank imports and inject `*pgxpool.Pool`:
+
+```go
+import (
+    "github.com/jackc/pgx/v5/pgxpool"
+    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+)
+```
+
+DSN format: `pgx5://user:pass@localhost:5432/dbname?sslmode=disable`
 
 ## License
 

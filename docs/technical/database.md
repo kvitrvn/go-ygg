@@ -4,13 +4,29 @@
 
 This project uses [golang-migrate](https://github.com/golang-migrate/migrate) with a `file://migrations` source.
 
-The DB driver is **agnostic**: add the appropriate blank import in `internal/infrastructure/persistence/`:
+The DB driver is **agnostic**: add the appropriate blank import in `internal/infrastructure/persistence/`.
 
-| Database    | Import                                                        |
-|-------------|---------------------------------------------------------------|
-| PostgreSQL  | `_ "github.com/golang-migrate/migrate/v4/database/postgres"`  |
-| MySQL       | `_ "github.com/golang-migrate/migrate/v4/database/mysql"`     |
-| SQLite3     | `_ "github.com/golang-migrate/migrate/v4/database/sqlite3"`   |
+**Recommended: pgx v5** (actively maintained, native PostgreSQL protocol)
+
+```bash
+go get github.com/jackc/pgx/v5
+go get github.com/golang-migrate/migrate/v4/database/pgx/v5
+```
+
+```go
+import (
+    "github.com/jackc/pgx/v5/pgxpool"
+    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
+)
+```
+
+Other supported drivers:
+
+| Database | golang-migrate import                                          | DSN scheme  |
+|----------|----------------------------------------------------------------|-------------|
+| pgx v5   | `github.com/golang-migrate/migrate/v4/database/pgx/v5`        | `pgx5://`   |
+| MySQL    | `github.com/golang-migrate/migrate/v4/database/mysql`         | `mysql://`  |
+| SQLite3  | `github.com/golang-migrate/migrate/v4/database/sqlite3`       | `sqlite3://`|
 
 ## File naming convention
 
@@ -40,5 +56,5 @@ make migrate-version       # print current version
 Configure via `config.yaml` or the `APP_DATABASE_DSN` environment variable:
 
 ```bash
-export APP_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
+export APP_DATABASE_DSN="pgx5://user:pass@localhost:5432/dbname?sslmode=disable"
 ```
