@@ -1,5 +1,9 @@
 # go-ygg
 
+<p align="center">
+  <img src=".github/assets/logo.png" alt="go-ygg logo" width="240" />
+</p>
+
 > Go project template — Hexagonal DDD · Cobra · Viper · golang-migrate
 
 ## Requirements
@@ -24,17 +28,17 @@ make run
 
 ## Commands
 
-| Command               | Description                          |
-|-----------------------|--------------------------------------|
-| `make build`          | Compile binary to `bin/`             |
-| `make test`           | Run tests with `-race`               |
-| `make lint`           | Run golangci-lint                    |
-| `make run`            | Build + start `serve`                |
-| `make migrate-up`     | Apply all pending migrations         |
-| `make migrate-down`   | Revert 1 migration                   |
-| `make migrate-version`| Print current migration version      |
-| `make docker-up`      | docker compose up                    |
-| `make docker-down`    | docker compose down                  |
+| Command                | Description                     |
+| ---------------------- | ------------------------------- |
+| `make build`           | Compile binary to `bin/`        |
+| `make test`            | Run tests with `-race`          |
+| `make lint`            | Run golangci-lint               |
+| `make run`             | Build + start `serve`           |
+| `make migrate-up`      | Apply all pending migrations    |
+| `make migrate-down`    | Revert 1 migration              |
+| `make migrate-version` | Print current migration version |
+| `make docker-up`       | docker compose up               |
+| `make docker-down`     | docker compose down             |
 
 ## CLI
 
@@ -63,6 +67,7 @@ APP_LOG_LEVEL=debug
 See [docs/technical/architecture.md](docs/technical/architecture.md).
 
 Hexagonal structure:
+
 ```
 internal/
 ├── domain/          # Entities, repository interfaces (no external dependencies)
