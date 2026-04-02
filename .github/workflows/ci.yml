@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 jobs:
-  ci:
+  codegen:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -34,14 +34,66 @@ jobs:
       - name: Build CSS
         run: tailwindcss -i assets/css/input.css -o assets/css/output.css --minify
 
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generated
+          path: |
+            internal/**/*_templ.go
+            assets/css/output.css
+
+  lint:
+    needs: codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
+
       - name: Install golangci-lint
         run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
       - name: Lint
         run: golangci-lint run ./...
 
+  test:
+    needs: codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
+
       - name: Test
         run: go test ./... -race -count=1
+
+  build:
+    needs: codegen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: generated
 
       - name: Build
         run: go build -ldflags="-s -w" ./cmd/main.go
