@@ -1,0 +1,14 @@
+[build]
+  cmd = "tailwindcss -i assets/css/input.css -o assets/css/output.css --minify && templ generate ./... && go build -o ./tmp/main ./cmd/main.go"
+  bin = "./tmp/main"
+  full_bin = "./tmp/main serve"
+  include_ext = ["go", "templ"]
+  exclude_regex = ["_templ\\.go$"]
+  exclude_dir = ["tmp", "bin", "assets"]
+  delay = 500
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

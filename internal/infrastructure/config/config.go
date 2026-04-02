@@ -34,7 +34,7 @@ func DefaultViper() *viper.Viper {
 	v.SetDefault("server.port", 8080)
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "json")
-	v.SetEnvPrefix("APP")
+	v.SetEnvPrefix("GO_YGG")
 	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 	return v

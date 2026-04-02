@@ -1,16 +1,19 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     ports:
       - "8080:8080"
     volumes:
-      - ./config.yaml:/config.yaml:ro
-      - ./migrations:/migrations:ro
+      - .:/app
+      - go-cache:/root/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
     depends_on:
       db:
         condition: service_healthy
     environment:
-      - APP_DATABASE_DSN=${DATABASE_DSN}
+      - GO_YGG_DATABASE_DSN=${DATABASE_DSN}
 
   # ── Uncomment and adapt the DB service for your driver ────────────────────
   db:
@@ -31,3 +34,5 @@ services:
 
 volumes:
   db_data:
+  go-cache:
+  go-build-cache:

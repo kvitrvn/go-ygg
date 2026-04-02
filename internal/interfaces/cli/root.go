@@ -37,8 +37,8 @@ func init() {
 	v = appconfig.DefaultViper()
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default: ./config.yaml)")
-	rootCmd.PersistentFlags().String("log-level", "", "log level: debug|info|warn|error (overrides config and APP_LOG_LEVEL)")
-	rootCmd.PersistentFlags().String("log-format", "", "log format: json|text (overrides config and APP_LOG_FORMAT)")
+	rootCmd.PersistentFlags().String("log-level", "", "log level: debug|info|warn|error (overrides config and GO_YGG_LOG_LEVEL)")
+	rootCmd.PersistentFlags().String("log-format", "", "log format: json|text (overrides config and GO_YGG_LOG_FORMAT)")
 
 	_ = v.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level"))
 	_ = v.BindPFlag("log.format", rootCmd.PersistentFlags().Lookup("log-format"))

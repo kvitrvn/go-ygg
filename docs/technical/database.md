@@ -53,8 +53,8 @@ make migrate-version       # print current version
 
 ## DSN
 
-Configure via `config.yaml` or the `APP_DATABASE_DSN` environment variable:
+Configure via `config.yaml` or the `GO_YGG_DATABASE_DSN` environment variable:
 
 ```bash
-export APP_DATABASE_DSN="pgx5://user:pass@localhost:5432/dbname?sslmode=disable"
+export GO_YGG_DATABASE_DSN="pgx5://user:pass@localhost:5432/dbname?sslmode=disable"
 ```

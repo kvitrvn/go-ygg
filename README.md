@@ -54,12 +54,12 @@ Global flags: `--config <path>`, `--log-level debug|info|warn|error`
 
 ## Configuration
 
-Via `config.yaml` (copied from `config.example.yaml`) or environment variables prefixed with `APP_`:
+Via `config.yaml` (copied from `config.example.yaml`) or environment variables prefixed with `GO_YGG_`:
 
 ```bash
-APP_SERVER_PORT=9090
-APP_DATABASE_DSN="postgres://..."
-APP_LOG_LEVEL=debug
+GO_YGG_SERVER_PORT=9090
+GO_YGG_DATABASE_DSN="postgres://..."
+GO_YGG_LOG_LEVEL=debug
 ```
 
 ## Architecture

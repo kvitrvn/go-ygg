@@ -1,4 +1,4 @@
-BINARY     := app
+BINARY     := go-ygg
 CMD        := ./cmd/main.go
 MODULE     := github.com/kvitrvn/go-ygg
 
@@ -11,13 +11,27 @@ LDFLAGS := -ldflags="-s -w \
   -X $(MODULE)/internal/version.Commit=$(COMMIT) \
   -X $(MODULE)/internal/version.BuildDate=$(BUILD_DATE)"
 
-.PHONY: build test lint run \
+CSS_IN  := assets/css/input.css
+CSS_OUT := assets/css/output.css
+
+.PHONY: build test lint run generate css dev \
         migrate-up migrate-down migrate-version \
-        docker-build docker-up docker-down
+        docker-build docker-up docker-down docker-logs
+
+## ── Codegen ──────────────────────────────────────────────────────────────────
+
+generate:
+	templ generate ./...
+
+css:
+	tailwindcss -i $(CSS_IN) -o $(CSS_OUT) --minify
+
+dev:
+	air
 
 ## ── Go ───────────────────────────────────────────────────────────────────────
 
-build:
+build: generate css
 	go build $(LDFLAGS) -o bin/$(BINARY) $(CMD)
 
 test:
@@ -42,11 +56,14 @@ migrate-version: build
 
 ## ── Docker ───────────────────────────────────────────────────────────────────
 
-docker-build:
+build:
 	docker build -t $(BINARY):latest .
 
-docker-up:
+up:
 	docker compose up --build -d
 
-docker-down:
+down:
 	docker compose down
+
+logs:
+	docker compose logs -f app

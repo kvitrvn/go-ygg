@@ -3,7 +3,7 @@ server:
   port: 8080
 
 database:
-  # Set APP_DATABASE_DSN env var to override without editing this file.
+  # Set GO_YGG_DATABASE_DSN env var to override without editing this file.
   # Examples:
   #   PostgreSQL : postgres://user:pass@localhost:5432/dbname?sslmode=disable
   #   MySQL      : mysql://user:pass@tcp(localhost:3306)/dbname

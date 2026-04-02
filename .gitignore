@@ -1,5 +1,12 @@
 # Binary
 bin/
+tmp/
+
+# Generated files (produced by templ generate, done via Docker/CI)
+*_templ.go
+
+# Tailwind CSS
+assets/css/output.css
 
 # Configuration (contains secrets)
 config.yaml

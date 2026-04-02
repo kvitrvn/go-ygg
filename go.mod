@@ -3,6 +3,7 @@ module github.com/kvitrvn/go-ygg
 go 1.26.1
 
 require (
+	github.com/a-h/templ v0.3.1001 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.4.0 // indirect
 	github.com/golang-migrate/migrate/v4 v4.19.1 // indirect
