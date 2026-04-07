@@ -1,21 +1,14 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 	"strings"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	appconfig "github.com/kvitrvn/go-ygg/internal/infrastructure/config"
-)
-
-var (
-	cfgFile string
-	v       *viper.Viper
 )
 
 // Execute is the entry point called from main.
@@ -34,37 +27,18 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	v = appconfig.DefaultViper()
-
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file path (default: ./config.yaml)")
-	rootCmd.PersistentFlags().String("log-level", "", "log level: debug|info|warn|error (overrides config and GO_YGG_LOG_LEVEL)")
-	rootCmd.PersistentFlags().String("log-format", "", "log format: json|text (overrides config and GO_YGG_LOG_FORMAT)")
-
-	_ = v.BindPFlag("log.level", rootCmd.PersistentFlags().Lookup("log-level"))
-	_ = v.BindPFlag("log.format", rootCmd.PersistentFlags().Lookup("log-format"))
-
 	rootCmd.AddCommand(serveCmd)
 	rootCmd.AddCommand(migrateCmd)
 	rootCmd.AddCommand(versionCmd)
 }
 
 func initConfig(_ *cobra.Command) error {
-	if cfgFile != "" {
-		v.SetConfigFile(cfgFile)
-	} else {
-		v.SetConfigName("config")
-		v.SetConfigType("yaml")
-		v.AddConfigPath(".")
+	cfg, err := appconfig.Load()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
 	}
 
-	if err := v.ReadInConfig(); err != nil {
-		var notFound viper.ConfigFileNotFoundError
-		if !errors.As(err, &notFound) {
-			return fmt.Errorf("read config: %w", err)
-		}
-	}
-
-	setupLogger(v.GetString("log.level"), v.GetString("log.format"))
+	setupLogger(cfg.Log.Level, cfg.Log.Format)
 	return nil
 }
 

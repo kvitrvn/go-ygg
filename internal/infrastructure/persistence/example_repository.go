@@ -7,14 +7,14 @@ import (
 	domain "github.com/kvitrvn/go-ygg/internal/domain/example"
 )
 
-// TODO: Add your DB driver. Example with pgx v5:
+// TODO: Add your runtime DB driver. Example with pgx v5:
 //
 //	import (
 //	    "github.com/jackc/pgx/v5/pgxpool"
-//	    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 //	)
 //
-// Then inject *pgxpool.Pool and replace the stub methods with real queries.
+// Migrations already use golang-migrate's postgres driver via the CLI package.
+// Inject *pgxpool.Pool and replace the stub methods with real queries.
 
 // ExampleRepository implements domain.Repository.
 type ExampleRepository struct {

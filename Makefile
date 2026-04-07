@@ -14,7 +14,7 @@ LDFLAGS := -ldflags="-s -w \
 CSS_IN  := assets/css/input.css
 CSS_OUT := assets/css/output.css
 
-.PHONY: build test lint run generate css dev \
+.PHONY: build test lint run generate css dev install-hooks \
         migrate-up migrate-down migrate-version \
         docker-build docker-up docker-down docker-logs
 
@@ -28,6 +28,9 @@ css:
 
 dev:
 	air
+
+install-hooks:
+	git config core.hooksPath .githooks
 
 ## ── Go ───────────────────────────────────────────────────────────────────────
 

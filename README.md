@@ -4,7 +4,7 @@
   <img src=".github/assets/logo.png" alt="go-ygg logo" width="240" />
 </p>
 
-> Go project template — Hexagonal DDD · Cobra · Viper · golang-migrate
+> Go project template — Hexagonal DDD · Cobra · env · golang-migrate
 
 ## Requirements
 
@@ -15,8 +15,9 @@
 ## Quick start
 
 ```bash
-# 1. Copy and edit the configuration
-cp config.example.yaml config.yaml
+# 1. Configure the application
+export GO_YGG_SERVER_PORT=8080
+export GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
 
 # 2. Download dependencies
 go mod download
@@ -34,11 +35,24 @@ make run
 | `make test`            | Run tests with `-race`          |
 | `make lint`            | Run golangci-lint               |
 | `make run`             | Build + start `serve`           |
+| `make install-hooks`   | Enable versioned Git hooks      |
 | `make migrate-up`      | Apply all pending migrations    |
 | `make migrate-down`    | Revert 1 migration              |
 | `make migrate-version` | Print current migration version |
 | `make docker-up`       | docker compose up               |
 | `make docker-down`     | docker compose down             |
+
+## Git hooks
+
+Enable the versioned pre-commit hook to run the same lint flow as CI:
+
+```bash
+make install-hooks
+```
+
+The hook regenerates templ and CSS artifacts, then runs `golangci-lint run ./...`.
+It executes inside the `app` service from `docker-compose`, so `make up` must already be running.
+After changes to `Dockerfile.dev`, rebuild the service with `docker compose up --build -d app`.
 
 ## CLI
 
@@ -50,16 +64,18 @@ app migrate version    # Print current version
 app --help             # Full help
 ```
 
-Global flags: `--config <path>`, `--log-level debug|info|warn|error`
+Global configuration is read from environment variables only.
 
 ## Configuration
 
-Via `config.yaml` (copied from `config.example.yaml`) or environment variables prefixed with `GO_YGG_`:
+Via environment variables prefixed with `GO_YGG_`:
 
 ```bash
+GO_YGG_SERVER_HOST=0.0.0.0
 GO_YGG_SERVER_PORT=9090
-GO_YGG_DATABASE_DSN="postgres://..."
+GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
 GO_YGG_LOG_LEVEL=debug
+GO_YGG_LOG_FORMAT=text
 ```
 
 ## Architecture
@@ -80,19 +96,17 @@ internal/
 
 ```bash
 go get github.com/jackc/pgx/v5
-go get github.com/golang-migrate/migrate/v4/database/pgx/v5
 ```
 
-In `internal/infrastructure/persistence/`, add the blank imports and inject `*pgxpool.Pool`:
+In `internal/infrastructure/persistence/`, inject `*pgxpool.Pool`:
 
 ```go
 import (
     "github.com/jackc/pgx/v5/pgxpool"
-    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 )
 ```
 
-DSN format: `pgx5://user:pass@localhost:5432/dbname?sslmode=disable`
+DSN format: `postgres://user:pass@localhost:5432/dbname?sslmode=disable`
 
 ## License
 

@@ -60,7 +60,6 @@ FILES=(
   Dockerfile
   docker-compose.yml
   .golangci.yml
-  config.example.yaml
   README.md
   docs/technical/database.md
   internal/infrastructure/config/config.go

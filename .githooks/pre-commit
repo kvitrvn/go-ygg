@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+require_cmd() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "pre-commit: missing required command: $1" >&2
+    exit 1
+  fi
+}
+
+require_cmd docker
+
+if ! docker compose ps --status running app >/dev/null 2>&1; then
+  echo "pre-commit: docker compose service 'app' is not running" >&2
+  echo "pre-commit: start it first with 'make up'" >&2
+  exit 1
+fi
+
+echo "pre-commit: running CI lint flow in docker compose service 'app'"
+docker compose exec -T app sh -lc '
+  set -euo pipefail
+  export PATH="/usr/local/go/bin:/go/bin:$PATH"
+  templ generate ./...
+  tailwindcss -i assets/css/input.css -o assets/css/output.css --minify
+  golangci-lint run ./...
+'

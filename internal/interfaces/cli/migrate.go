@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/spf13/cobra"
 
@@ -76,13 +77,11 @@ func init() {
 }
 
 func newMigrate() (*migrate.Migrate, error) {
-	cfg, err := appconfig.Load(v)
+	cfg, err := appconfig.Load()
 	if err != nil {
 		return nil, fmt.Errorf("load config: %w", err)
 	}
 
-	// TODO: Add your DB driver blank import, for example:
-	//   _ "github.com/golang-migrate/migrate/v4/database/postgres"
 	m, err := migrate.New("file://migrations", cfg.Database.DSN)
 	if err != nil {
 		return nil, fmt.Errorf("create migrate instance: %w", err)

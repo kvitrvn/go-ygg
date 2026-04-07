@@ -6,17 +6,15 @@ This project uses [golang-migrate](https://github.com/golang-migrate/migrate) wi
 
 The DB driver is **agnostic**: add the appropriate blank import in `internal/infrastructure/persistence/`.
 
-**Recommended: pgx v5** (actively maintained, native PostgreSQL protocol)
+**Recommended runtime driver: pgx v5** (actively maintained, native PostgreSQL protocol)
 
 ```bash
 go get github.com/jackc/pgx/v5
-go get github.com/golang-migrate/migrate/v4/database/pgx/v5
 ```
 
 ```go
 import (
     "github.com/jackc/pgx/v5/pgxpool"
-    _ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 )
 ```
 
@@ -24,7 +22,7 @@ Other supported drivers:
 
 | Database | golang-migrate import                                          | DSN scheme  |
 |----------|----------------------------------------------------------------|-------------|
-| pgx v5   | `github.com/golang-migrate/migrate/v4/database/pgx/v5`        | `pgx5://`   |
+| PostgreSQL | `github.com/golang-migrate/migrate/v4/database/postgres`     | `postgres://` |
 | MySQL    | `github.com/golang-migrate/migrate/v4/database/mysql`         | `mysql://`  |
 | SQLite3  | `github.com/golang-migrate/migrate/v4/database/sqlite3`       | `sqlite3://`|
 
@@ -53,8 +51,8 @@ make migrate-version       # print current version
 
 ## DSN
 
-Configure via `config.yaml` or the `GO_YGG_DATABASE_DSN` environment variable:
+Configure via the `GO_YGG_DATABASE_DSN` environment variable:
 
 ```bash
-export GO_YGG_DATABASE_DSN="pgx5://user:pass@localhost:5432/dbname?sslmode=disable"
+export GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
 ```
