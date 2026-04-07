@@ -15,9 +15,8 @@
 ## Quick start
 
 ```bash
-# 1. Configure the application
-export GO_YGG_SERVER_PORT=8080
-export GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
+# 1. Prepare environment
+cp .env.example .env
 
 # 2. Download dependencies
 go mod download
@@ -71,11 +70,21 @@ Global configuration is read from environment variables only.
 Via environment variables prefixed with `GO_YGG_`:
 
 ```bash
+cp .env.example .env
+```
+
+Default template values in `.env.example`:
+
+```bash
 GO_YGG_SERVER_HOST=0.0.0.0
-GO_YGG_SERVER_PORT=9090
-GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=disable"
-GO_YGG_LOG_LEVEL=debug
-GO_YGG_LOG_FORMAT=text
+GO_YGG_SERVER_PORT=8080
+GO_YGG_DATABASE_DSN=postgres://app:secret@db:5432/app?sslmode=disable
+GO_YGG_LOG_LEVEL=info
+GO_YGG_LOG_FORMAT=json
+POSTGRES_USER=app
+POSTGRES_PASSWORD=secret
+POSTGRES_DB=app
+POSTGRES_PORT=5432
 ```
 
 ## Architecture
