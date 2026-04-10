@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
+	"log/slog"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -16,6 +18,20 @@ var migrateCmd = &cobra.Command{
 	Short: "Database migration commands",
 }
 
+type migrateClient interface {
+	Up() error
+	Steps(int) error
+	Version() (uint, bool, error)
+	Close() (error, error)
+}
+
+type migrationStatus struct {
+	Applied    bool
+	HasVersion bool
+	Version    uint
+	Dirty      bool
+}
+
 var migrateUpCmd = &cobra.Command{
 	Use:   "up",
 	Short: "Apply all pending migrations",
@@ -24,10 +40,19 @@ var migrateUpCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		defer closeMigrate(m)
+
+		status, err := applyMigrations(m)
+		if err != nil {
 			return fmt.Errorf("migrate up: %w", err)
 		}
-		fmt.Println("migrations applied")
+
+		if status.Applied {
+			fmt.Println("migrations applied")
+		} else {
+			fmt.Println("no migrations to apply")
+		}
+		printMigrationVersion(status)
 		return nil
 	},
 }
@@ -47,10 +72,17 @@ var migrateDownCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
+		defer closeMigrate(m)
+
 		if err := m.Steps(-steps); err != nil && err != migrate.ErrNoChange {
 			return fmt.Errorf("migrate down: %w", err)
 		}
 		fmt.Printf("%d migration(s) reverted\n", steps)
+		status, err := migrationVersion(m)
+		if err != nil {
+			return fmt.Errorf("get version after migrate down: %w", err)
+		}
+		printMigrationVersion(status)
 		return nil
 	},
 }
@@ -63,11 +95,13 @@ var migrateVersionCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		ver, dirty, err := m.Version()
+		defer closeMigrate(m)
+
+		status, err := migrationVersion(m)
 		if err != nil {
 			return fmt.Errorf("get version: %w", err)
 		}
-		fmt.Printf("version: %d, dirty: %v\n", ver, dirty)
+		printMigrationVersion(status)
 		return nil
 	},
 }
@@ -87,4 +121,79 @@ func newMigrate() (*migrate.Migrate, error) {
 		return nil, fmt.Errorf("create migrate instance: %w", err)
 	}
 	return m, nil
+}
+
+func applyMigrations(m migrateClient) (migrationStatus, error) {
+	status := migrationStatus{Applied: true}
+
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			status.Applied = false
+		} else {
+			return migrationStatus{}, err
+		}
+	}
+
+	versionStatus, err := migrationVersion(m)
+	if err != nil {
+		return migrationStatus{}, err
+	}
+
+	status.HasVersion = versionStatus.HasVersion
+	status.Version = versionStatus.Version
+	status.Dirty = versionStatus.Dirty
+
+	return status, nil
+}
+
+func migrationVersion(m interface{ Version() (uint, bool, error) }) (migrationStatus, error) {
+	version, dirty, err := m.Version()
+	if err != nil {
+		if errors.Is(err, migrate.ErrNilVersion) {
+			return migrationStatus{}, nil
+		}
+		return migrationStatus{}, err
+	}
+
+	return migrationStatus{
+		HasVersion: true,
+		Version:    version,
+		Dirty:      dirty,
+	}, nil
+}
+
+func logMigrationStatus(status migrationStatus) {
+	if status.Applied {
+		slog.Info("database migrations applied", "version", migrationVersionValue(status), "dirty", status.Dirty)
+		return
+	}
+
+	slog.Info("database migrations already up to date", "version", migrationVersionValue(status), "dirty", status.Dirty)
+}
+
+func printMigrationVersion(status migrationStatus) {
+	if !status.HasVersion {
+		fmt.Println("version: none, dirty: false")
+		return
+	}
+
+	fmt.Printf("version: %d, dirty: %v\n", status.Version, status.Dirty)
+}
+
+func migrationVersionValue(status migrationStatus) any {
+	if !status.HasVersion {
+		return "none"
+	}
+
+	return status.Version
+}
+
+func closeMigrate(m migrateClient) {
+	sourceErr, databaseErr := m.Close()
+	if sourceErr != nil {
+		slog.Warn("closing migration source failed", "error", sourceErr)
+	}
+	if databaseErr != nil {
+		slog.Warn("closing migration database failed", "error", databaseErr)
+	}
 }

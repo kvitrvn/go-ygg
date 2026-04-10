@@ -1,0 +1,7 @@
+{
+  "componentsDir": "internal/interfaces/http/templui/components",
+  "utilsDir": "internal/interfaces/http/templui/utils",
+  "moduleName": "github.com/kvitrvn/go-ygg",
+  "jsDir": "assets/js/templui",
+  "jsPublicPath": "/static/js/templui"
+}

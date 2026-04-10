@@ -29,6 +29,7 @@ coverage.html
 .idea/
 .vscode/
 .codex
+.cache/
 *.swp
 *.swo
 

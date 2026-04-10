@@ -11,30 +11,15 @@ LDFLAGS := -ldflags="-s -w \
   -X $(MODULE)/internal/version.Commit=$(COMMIT) \
   -X $(MODULE)/internal/version.BuildDate=$(BUILD_DATE)"
 
-CSS_IN  := assets/css/input.css
-CSS_OUT := assets/css/output.css
-
-.PHONY: build test lint run generate css dev install-hooks \
-        migrate-up migrate-down migrate-version \
-        docker-build docker-up docker-down docker-logs
-
-## ── Codegen ──────────────────────────────────────────────────────────────────
-
-generate:
-	templ generate ./...
-
-css:
-	tailwindcss -i $(CSS_IN) -o $(CSS_OUT) --minify
-
-dev:
-	air
+.PHONY: build run test lint install-hooks \
+        up down logs
 
 install-hooks:
 	git config core.hooksPath .githooks
 
 ## ── Go ───────────────────────────────────────────────────────────────────────
 
-build: generate css
+build:
 	go build $(LDFLAGS) -o bin/$(BINARY) $(CMD)
 
 test:
@@ -45,22 +30,6 @@ lint:
 
 run: build
 	./bin/$(BINARY) serve
-
-## ── Migrations ───────────────────────────────────────────────────────────────
-
-migrate-up: build
-	./bin/$(BINARY) migrate up
-
-migrate-down: build
-	./bin/$(BINARY) migrate down
-
-migrate-version: build
-	./bin/$(BINARY) migrate version
-
-## ── Docker ───────────────────────────────────────────────────────────────────
-
-build:
-	docker build -t $(BINARY):latest .
 
 up:
 	docker compose up --build -d

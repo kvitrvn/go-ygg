@@ -7,26 +7,25 @@ ENV PATH="/go/bin:${PATH}"
 WORKDIR /app
 
 RUN apt-get update -qq && apt-get install -y --no-install-recommends wget ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+  && rm -rf /var/lib/apt/lists/*
 
 # Tailwind standalone binary
 RUN case "${TARGETARCH}" in \
-      amd64) TAILWIND_ARCH=x64 ;; \
-      arm64) TAILWIND_ARCH=arm64 ;; \
-      *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
-    esac \
-    && wget -qO /usr/local/bin/tailwindcss \
-         "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-${TAILWIND_ARCH}" \
-    && chmod +x /usr/local/bin/tailwindcss
+  amd64) TAILWIND_ARCH=x64 ;; \
+  arm64) TAILWIND_ARCH=arm64 ;; \
+  *) echo "Unsupported arch: ${TARGETARCH}" && exit 1 ;; \
+  esac \
+  && wget -qO /usr/local/bin/tailwindcss \
+  "https://github.com/tailwindlabs/tailwindcss/releases/download/${TAILWIND_VERSION}/tailwindcss-linux-${TAILWIND_ARCH}" \
+  && chmod +x /usr/local/bin/tailwindcss
 
 # Air, templ, and golangci-lint
 RUN go install github.com/air-verse/air@latest \
-    && go install github.com/a-h/templ/cmd/templ@latest \
-    && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
+  && go install github.com/a-h/templ/cmd/templ@latest \
+  && go install github.com/templui/templui/cmd/templui@latest \
+  && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
 
 COPY go.mod go.sum ./
 RUN go mod download
-
-EXPOSE 8080
 
 CMD ["air"]

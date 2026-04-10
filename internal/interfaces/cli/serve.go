@@ -19,6 +19,19 @@ var serveCmd = &cobra.Command{
 			return fmt.Errorf("load config: %w", err)
 		}
 
+		m, err := newMigrate()
+		if err != nil {
+			return err
+		}
+
+		slog.Info("applying database migrations")
+		migrationStatus, err := applyMigrations(m)
+		closeMigrate(m)
+		if err != nil {
+			return fmt.Errorf("apply database migrations: %w", err)
+		}
+		logMigrationStatus(migrationStatus)
+
 		addr := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
 		slog.Info("starting server", "addr", addr)
 
