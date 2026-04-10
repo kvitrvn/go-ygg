@@ -1,15 +1,25 @@
 package templates
 
-templ HomePage() {
-	@Base("go-ygg") {
-		<main class="mx-auto flex min-h-screen w-full max-w-screen-sm flex-col items-center justify-center gap-6 px-6 text-center">
-			<img
-				src="/static/images/logo.png"
-				alt="go-ygg logo"
-				width="560"
-				height="560"
-				class="h-[280px] w-[280px] object-contain sm:h-80 sm:w-80"
-			/>
-		</main>
+templ homeContent() {
+	<main class="mx-auto flex min-h-screen w-full max-w-screen-sm flex-col items-center justify-center gap-6 px-6 text-center">
+		<img
+			src="/static/images/logo.png"
+			alt="go-ygg logo"
+			width="560"
+			height="560"
+			class="h-[280px] w-[280px] object-contain sm:h-80 sm:w-80"
+		/>
+	</main>
+}
+
+templ HomePage(partial bool) {
+	if partial {
+		@HtmxFragment("go-ygg") {
+			@homeContent()
+		}
+	} else {
+		@Base("go-ygg") {
+			@homeContent()
+		}
 	}
 }

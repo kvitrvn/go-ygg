@@ -121,4 +121,19 @@
   }
 }
 
+@layer components {
+  #global-indicator.is-active {
+    opacity: 1;
+  }
+
+  #app-shell {
+    min-height: 100vh;
+  }
+
+  #global-indicator-bar {
+    transform-origin: left center;
+    transform: scaleX(0);
+  }
+}
+
 @source "../../internal/interfaces/http/**/*.templ";

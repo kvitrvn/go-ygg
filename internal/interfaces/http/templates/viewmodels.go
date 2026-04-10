@@ -6,10 +6,11 @@ import (
 )
 
 type AuthFormPageData struct {
-	Username string
-	Login    string
-	Email    string
-	Error    string
+	Username    string
+	Login       string
+	Email       string
+	Error       string
+	FieldErrors map[string]string
 }
 
 type DashboardPageData struct {
@@ -23,17 +24,19 @@ type MembersPageData struct {
 }
 
 type OrganizationCreatePageData struct {
-	Auth  *appiam.AuthContext
-	Name  string
-	Error string
+	Auth        *appiam.AuthContext
+	Name        string
+	Error       string
+	FieldErrors map[string]string
 }
 
 type InvitationCreatePageData struct {
-	Auth      *appiam.AuthContext
-	Email     string
-	Role      domain.Role
-	InviteURL string
-	Error     string
+	Auth        *appiam.AuthContext
+	Email       string
+	Role        domain.Role
+	InviteURL   string
+	Error       string
+	FieldErrors map[string]string
 }
 
 type InvitationAcceptPageData struct {
@@ -43,7 +46,19 @@ type InvitationAcceptPageData struct {
 	Username             string
 	Email                string
 	Error                string
+	FieldErrors          map[string]string
 	CanUseCurrentSession bool
+}
+
+func fieldError(errors map[string]string, field string) string {
+	if errors == nil {
+		return ""
+	}
+	return errors[field]
+}
+
+func hasFieldError(errors map[string]string, field string) bool {
+	return fieldError(errors, field) != ""
 }
 
 func tenantOptionLabel(membership domain.MembershipWithTenant) string {

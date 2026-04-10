@@ -83,7 +83,7 @@ func csrfMiddleware(appBaseURL string) func(http.Handler) http.Handler {
 func requireAuthenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if web.AuthFromContext(r.Context()) == nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			web.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		next.ServeHTTP(w, r)
@@ -94,7 +94,7 @@ func requireRole(next http.Handler, roles ...domain.Role) http.Handler {
 	return requireAuthenticated(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := web.AuthFromContext(r.Context())
 		if auth == nil {
-			http.Redirect(w, r, "/login", http.StatusSeeOther)
+			web.Redirect(w, r, "/login", http.StatusSeeOther)
 			return
 		}
 		for _, role := range roles {

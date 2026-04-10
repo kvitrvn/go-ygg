@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net/mail"
 	"net/url"
 	"strings"
 	"time"
@@ -123,8 +124,8 @@ func (s *Service) SignUp(ctx context.Context, input SignUpInput) (*SessionResult
 	username := normalizeUsername(input.Username)
 	email := normalizeEmail(input.Email)
 	password := strings.TrimSpace(input.Password)
-	if !validUsername(username) || email == "" || len(password) < 8 {
-		return nil, domain.ErrInvalidInput
+	if validation := validateSignUpInput(username, email, password); validation != nil {
+		return nil, validation
 	}
 
 	passwordHash, err := s.hasher.Hash(password)
@@ -174,20 +175,27 @@ func (s *Service) SignUp(ctx context.Context, input SignUpInput) (*SessionResult
 	}
 
 	if err := s.store.WithinTx(ctx, func(store Store) error {
+		validation := domain.NewValidationErrors()
+
 		existing, err := store.GetUserByEmail(ctx, email)
 		if err != nil {
 			return err
 		}
 		if existing != nil {
-			return domain.ErrConflict
+			validation.Add("email", "This email is already used.")
 		}
+
 		existing, err = store.GetUserByUsername(ctx, username)
 		if err != nil {
 			return err
 		}
 		if existing != nil {
-			return domain.ErrConflict
+			validation.Add("username", "This username is already taken.")
 		}
+		if validation.Any() {
+			return validation
+		}
+
 		if err := store.CreateUser(ctx, user); err != nil {
 			return err
 		}
@@ -215,8 +223,8 @@ func (s *Service) SignUp(ctx context.Context, input SignUpInput) (*SessionResult
 func (s *Service) SignIn(ctx context.Context, input SignInInput) (*SessionResult, error) {
 	login := strings.TrimSpace(input.Login)
 	password := strings.TrimSpace(input.Password)
-	if login == "" || password == "" {
-		return nil, domain.ErrInvalidInput
+	if validation := validateSignInInput(login, password); validation != nil {
+		return nil, validation
 	}
 
 	user, err := s.findUserByLogin(ctx, login)
@@ -269,8 +277,8 @@ func (s *Service) CreateOrganization(ctx context.Context, input CreateOrganizati
 	}
 
 	name := strings.TrimSpace(input.Name)
-	if name == "" {
-		return nil, domain.ErrInvalidInput
+	if validation := validateOrganizationInput(name); validation != nil {
+		return nil, validation
 	}
 
 	now := s.now()
@@ -403,15 +411,15 @@ func (s *Service) CreateInvitation(ctx context.Context, input CreateInvitationIn
 	if err != nil {
 		return nil, err
 	}
+	email := normalizeEmail(input.Email)
+	if validation := validateInvitationInput(email, input.Role); validation != nil {
+		return nil, validation
+	}
 	if auth.ActiveMembership.Tenant.IsPersonal {
 		return nil, domain.ErrForbidden
 	}
 	if !auth.ActiveMembership.Membership.Role.CanInvite(input.Role) {
 		return nil, domain.ErrForbidden
-	}
-	email := normalizeEmail(input.Email)
-	if email == "" || !input.Role.Valid() {
-		return nil, domain.ErrInvalidInput
 	}
 
 	rawInvitationToken, invitationTokenHash, err := s.tokenManager.NewToken()
@@ -510,29 +518,31 @@ func (s *Service) AcceptInvitation(ctx context.Context, input AcceptInvitationIn
 			user = currentAuth.User
 		} else {
 			email := normalizeEmail(input.Email)
-			if email == "" || email != invitation.Invitation.Email || len(strings.TrimSpace(input.Password)) < 8 {
-				return domain.ErrInvalidInput
-			}
+			password := strings.TrimSpace(input.Password)
 			existingUser, err := store.GetUserByEmail(ctx, email)
 			if err != nil {
 				return err
 			}
+			if validation := validateInvitationAcceptanceInput(input.Username, email, password, invitation.Invitation.Email, existingUser == nil); validation != nil {
+				return validation
+			}
 			if existingUser != nil {
 				if s.hasher.Compare(existingUser.PasswordHash, input.Password) != nil {
-					return domain.ErrInvalidCredentials
+					validation := domain.NewValidationErrors()
+					validation.Add("password", "Incorrect password for this account.")
+					return validation
 				}
 				user = existingUser
 			} else {
 				username := normalizeUsername(input.Username)
-				if !validUsername(username) {
-					return domain.ErrInvalidInput
-				}
 				existingUser, err := store.GetUserByUsername(ctx, username)
 				if err != nil {
 					return err
 				}
 				if existingUser != nil {
-					return domain.ErrConflict
+					validation := domain.NewValidationErrors()
+					validation.Add("username", "This username is already taken.")
+					return validation
 				}
 				passwordHash, err := s.hasher.Hash(input.Password)
 				if err != nil {
@@ -637,6 +647,11 @@ func normalizeEmail(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
 }
 
+func validEmail(email string) bool {
+	addr, err := mail.ParseAddress(email)
+	return err == nil && strings.EqualFold(addr.Address, email)
+}
+
 func normalizeUsername(username string) string {
 	return strings.ToLower(strings.TrimSpace(username))
 }
@@ -658,6 +673,87 @@ func validUsername(username string) bool {
 		}
 	}
 	return true
+}
+
+func validateSignUpInput(username, email, password string) error {
+	validation := domain.NewValidationErrors()
+	if !validUsername(username) {
+		validation.Add("username", "Use 3-32 lowercase letters, digits or `-`.")
+	}
+	if email == "" {
+		validation.Add("email", "Email is required.")
+	} else if !validEmail(email) {
+		validation.Add("email", "Enter a valid email address.")
+	}
+	if len(password) < 8 {
+		validation.Add("password", "Use at least 8 characters.")
+	}
+	if validation.Any() {
+		return validation
+	}
+	return nil
+}
+
+func validateSignInInput(login, password string) error {
+	validation := domain.NewValidationErrors()
+	if strings.TrimSpace(login) == "" {
+		validation.Add("login", "Email or username is required.")
+	}
+	if strings.TrimSpace(password) == "" {
+		validation.Add("password", "Password is required.")
+	}
+	if validation.Any() {
+		return validation
+	}
+	return nil
+}
+
+func validateOrganizationInput(name string) error {
+	validation := domain.NewValidationErrors()
+	if strings.TrimSpace(name) == "" {
+		validation.Add("name", "Organization name is required.")
+	}
+	if validation.Any() {
+		return validation
+	}
+	return nil
+}
+
+func validateInvitationInput(email string, role domain.Role) error {
+	validation := domain.NewValidationErrors()
+	if email == "" {
+		validation.Add("email", "Email is required.")
+	} else if !validEmail(email) {
+		validation.Add("email", "Enter a valid email address.")
+	}
+	if !role.Valid() {
+		validation.Add("role", "Select a valid role.")
+	}
+	if validation.Any() {
+		return validation
+	}
+	return nil
+}
+
+func validateInvitationAcceptanceInput(username, email, password, invitationEmail string, requireUsername bool) error {
+	validation := domain.NewValidationErrors()
+	if email == "" {
+		validation.Add("email", "Email is required.")
+	} else if !validEmail(email) {
+		validation.Add("email", "Enter a valid email address.")
+	} else if email != invitationEmail {
+		validation.Add("email", "Email must match the invitation.")
+	}
+	if requireUsername && !validUsername(normalizeUsername(username)) {
+		validation.Add("username", "Use 3-32 lowercase letters, digits or `-`.")
+	}
+	if len(password) < 8 {
+		validation.Add("password", "Use at least 8 characters.")
+	}
+	if validation.Any() {
+		return validation
+	}
+	return nil
 }
 
 func generateTenantSlug(name string) string {

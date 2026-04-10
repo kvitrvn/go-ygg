@@ -19,6 +19,39 @@ var (
 	ErrTenantNotAccessible     = errors.New("tenant not accessible")
 )
 
+type ValidationErrors struct {
+	Fields map[string]string
+}
+
+func NewValidationErrors() *ValidationErrors {
+	return &ValidationErrors{Fields: make(map[string]string)}
+}
+
+func (e *ValidationErrors) Add(field, message string) {
+	if e == nil || field == "" || message == "" {
+		return
+	}
+	if e.Fields == nil {
+		e.Fields = make(map[string]string)
+	}
+	if _, exists := e.Fields[field]; exists {
+		return
+	}
+	e.Fields[field] = message
+}
+
+func (e *ValidationErrors) Any() bool {
+	return e != nil && len(e.Fields) > 0
+}
+
+func (e *ValidationErrors) Error() string {
+	return ErrInvalidInput.Error()
+}
+
+func (e *ValidationErrors) Is(target error) bool {
+	return target == ErrInvalidInput
+}
+
 type Role string
 
 const (

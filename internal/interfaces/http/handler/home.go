@@ -8,5 +8,5 @@ import (
 
 func Home(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_ = templates.HomePage().Render(r.Context(), w)
+	_ = templates.HomePage(false).Render(r.Context(), w)
 }

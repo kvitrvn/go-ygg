@@ -2,6 +2,7 @@ package iam
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -284,6 +285,67 @@ func TestSignUpCreatesPersonalTenantAndSession(t *testing.T) {
 	}
 }
 
+func TestSignUpReturnsFieldValidationErrors(t *testing.T) {
+	store := newFakeStore()
+	service := NewService(store, fakeHasher{}, &fakeTokenManager{}, 24*time.Hour, 48*time.Hour, "http://localhost:8080")
+
+	_, err := service.SignUp(context.Background(), SignUpInput{
+		Username: "A",
+		Email:    "not-an-email",
+		Password: "short",
+	})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("errors.Is(err, ErrInvalidInput) = false, err = %v", err)
+	}
+
+	var validation *domain.ValidationErrors
+	if !errors.As(err, &validation) {
+		t.Fatalf("errors.As(err, *ValidationErrors) = false, err = %v", err)
+	}
+	if validation.Fields["username"] == "" {
+		t.Fatal("username field error is empty")
+	}
+	if validation.Fields["email"] == "" {
+		t.Fatal("email field error is empty")
+	}
+	if validation.Fields["password"] == "" {
+		t.Fatal("password field error is empty")
+	}
+}
+
+func TestSignUpReturnsBothUniquenessErrors(t *testing.T) {
+	store := newFakeStore()
+	service := NewService(store, fakeHasher{}, &fakeTokenManager{}, 24*time.Hour, 48*time.Hour, "http://localhost:8080")
+
+	if _, err := service.SignUp(context.Background(), SignUpInput{
+		Username: "owner",
+		Email:    "owner@example.com",
+		Password: "password123",
+	}); err != nil {
+		t.Fatalf("seed SignUp() error = %v", err)
+	}
+
+	_, err := service.SignUp(context.Background(), SignUpInput{
+		Username: "owner",
+		Email:    "owner@example.com",
+		Password: "password123",
+	})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("errors.Is(err, ErrInvalidInput) = false, err = %v", err)
+	}
+
+	var validation *domain.ValidationErrors
+	if !errors.As(err, &validation) {
+		t.Fatalf("errors.As(err, *ValidationErrors) = false, err = %v", err)
+	}
+	if validation.Fields["username"] == "" {
+		t.Fatal("username uniqueness error is empty")
+	}
+	if validation.Fields["email"] == "" {
+		t.Fatal("email uniqueness error is empty")
+	}
+}
+
 func TestSignInAcceptsEmailOrUsername(t *testing.T) {
 	store := newFakeStore()
 	tokens := &fakeTokenManager{}
@@ -349,6 +411,47 @@ func TestCreateOrganizationCreatesCollaborativeTenantAndSwitchesSession(t *testi
 	}
 	if auth.ActiveMembership.Tenant.IsPersonal {
 		t.Fatal("auth.ActiveMembership.Tenant.IsPersonal = true, want false")
+	}
+}
+
+func TestCreateInvitationReturnsFieldValidationErrors(t *testing.T) {
+	store := newFakeStore()
+	tokens := &fakeTokenManager{}
+	service := NewService(store, fakeHasher{}, tokens, 24*time.Hour, 48*time.Hour, "http://localhost:8080")
+
+	signUpResult, err := service.SignUp(context.Background(), SignUpInput{
+		Username: "owner",
+		Email:    "owner@example.com",
+		Password: "password123",
+	})
+	if err != nil {
+		t.Fatalf("SignUp() error = %v", err)
+	}
+	if _, err := service.CreateOrganization(context.Background(), CreateOrganizationInput{
+		SessionToken: signUpResult.SessionToken,
+		Name:         "Alpha",
+	}); err != nil {
+		t.Fatalf("CreateOrganization() error = %v", err)
+	}
+
+	_, err = service.CreateInvitation(context.Background(), CreateInvitationInput{
+		SessionToken: signUpResult.SessionToken,
+		Email:        "bad-email",
+		Role:         domain.Role("bogus"),
+	})
+	if !errors.Is(err, domain.ErrInvalidInput) {
+		t.Fatalf("errors.Is(err, ErrInvalidInput) = false, err = %v", err)
+	}
+
+	var validation *domain.ValidationErrors
+	if !errors.As(err, &validation) {
+		t.Fatalf("errors.As(err, *ValidationErrors) = false, err = %v", err)
+	}
+	if validation.Fields["email"] == "" {
+		t.Fatal("email field error is empty")
+	}
+	if validation.Fields["role"] == "" {
+		t.Fatal("role field error is empty")
 	}
 }
 

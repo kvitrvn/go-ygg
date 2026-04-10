@@ -7,13 +7,23 @@ import (
 	"github.com/kvitrvn/go-ygg/internal/interfaces/http/templui/components/input"
 )
 
-templ pageFrame(title string) {
-	@Base(title) {
-		<div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center px-6 py-12">
-			<div class="mx-auto w-full max-w-md rounded-3xl border bg-card p-8 shadow-sm">
-				{ children... }
+templ pageFrame(title string, partial bool) {
+	if partial {
+		@HtmxFragment(title) {
+			<div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center px-6 py-12">
+				<div class="mx-auto w-full max-w-md rounded-3xl border bg-card p-8 shadow-sm">
+					{ children... }
+				</div>
 			</div>
-		</div>
+		}
+	} else {
+		@Base(title) {
+			<div class="mx-auto flex min-h-screen w-full max-w-3xl flex-col justify-center px-6 py-12">
+				<div class="mx-auto w-full max-w-md rounded-3xl border bg-card p-8 shadow-sm">
+					{ children... }
+				</div>
+			</div>
+		}
 	}
 }
 
@@ -23,8 +33,14 @@ templ errorBanner(message string) {
 	}
 }
 
-templ LoginPage(data AuthFormPageData) {
-	@pageFrame("Sign in") {
+templ fieldErrorText(message string) {
+	if message != "" {
+		<p class="text-sm text-destructive">{ message }</p>
+	}
+}
+
+templ LoginPage(data AuthFormPageData, partial bool) {
+	@pageFrame("Sign in", partial) {
 		<div class="space-y-6">
 			<div class="space-y-2 text-center">
 				<h1 class="text-3xl font-semibold tracking-tight">Sign in</h1>
@@ -34,11 +50,13 @@ templ LoginPage(data AuthFormPageData) {
 			<form method="post" action="/login" class="space-y-4">
 				<div class="space-y-2">
 					<label class="text-sm font-medium" for="login">Email or username</label>
-					@input.Input(input.Props{ID: "login", Name: "login", Value: data.Login})
+					@input.Input(input.Props{ID: "login", Name: "login", Value: data.Login, HasError: hasFieldError(data.FieldErrors, "login"), Attributes: templ.Attributes{"autocomplete": "username"}})
+					@fieldErrorText(fieldError(data.FieldErrors, "login"))
 				</div>
 				<div class="space-y-2">
 					<label class="text-sm font-medium" for="password">Password</label>
-					@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword})
+					@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword, HasError: hasFieldError(data.FieldErrors, "password"), Attributes: templ.Attributes{"autocomplete": "current-password"}})
+					@fieldErrorText(fieldError(data.FieldErrors, "password"))
 				</div>
 				@button.Button(button.Props{Type: button.TypeSubmit, FullWidth: true}) {
 					Sign in
@@ -52,8 +70,8 @@ templ LoginPage(data AuthFormPageData) {
 	}
 }
 
-templ SignUpPage(data AuthFormPageData) {
-	@pageFrame("Create account") {
+templ SignUpPage(data AuthFormPageData, partial bool) {
+	@pageFrame("Create account", partial) {
 		<div class="space-y-6">
 			<div class="space-y-2 text-center">
 				<h1 class="text-3xl font-semibold tracking-tight">Create account</h1>
@@ -63,17 +81,20 @@ templ SignUpPage(data AuthFormPageData) {
 			<form method="post" action="/signup" class="space-y-4">
 				<div class="space-y-2">
 					<label class="text-sm font-medium" for="username">Username</label>
-					@input.Input(input.Props{ID: "username", Name: "username", Value: data.Username})
+					@input.Input(input.Props{ID: "username", Name: "username", Value: data.Username, HasError: hasFieldError(data.FieldErrors, "username"), Attributes: templ.Attributes{"autocomplete": "username"}})
+				  <p class="text-xs text-muted-foreground">3-32 characters for the username, lowercase letters, digits or `-`.</p>
+					@fieldErrorText(fieldError(data.FieldErrors, "username"))
 				</div>
 				<div class="space-y-2">
 					<label class="text-sm font-medium" for="email">Email</label>
-					@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email})
+					@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email, HasError: hasFieldError(data.FieldErrors, "email"), Attributes: templ.Attributes{"autocomplete": "email"}})
+					@fieldErrorText(fieldError(data.FieldErrors, "email"))
 				</div>
 				<div class="space-y-2">
 					<label class="text-sm font-medium" for="password">Password</label>
-					@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword})
+					@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword, HasError: hasFieldError(data.FieldErrors, "password"), Attributes: templ.Attributes{"autocomplete": "new-password"}})
+					@fieldErrorText(fieldError(data.FieldErrors, "password"))
 				</div>
-				<p class="text-xs text-muted-foreground">Use 3-32 characters for the username, lowercase letters, digits or `-`.</p>
 				<p class="text-xs text-muted-foreground">Use at least 8 characters for the password.</p>
 				@button.Button(button.Props{Type: button.TypeSubmit, FullWidth: true}) {
 					Create account
@@ -127,151 +148,194 @@ templ tenantSwitcher(auth *appiam.AuthContext) {
 	}
 }
 
-templ DashboardPage(data DashboardPageData) {
-	@Base("App") {
-		<main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-12">
-			@appHeader(data.Auth, "Workspace", "Personal tenant first, organizations when needed.")
-			@errorBanner(data.Error)
-			@tenantSwitcher(data.Auth)
-			if data.Auth != nil {
-				<section class="grid gap-4 sm:grid-cols-2">
-					<div class="rounded-2xl border bg-card p-6">
-						<p class="text-sm font-medium text-muted-foreground">{ tenantKindLabel(data.Auth.ActiveMembership.Tenant) }</p>
-						<p class="mt-2 text-2xl font-semibold">{ data.Auth.ActiveMembership.Tenant.Name }</p>
-						<p class="mt-2 text-sm text-muted-foreground">Role: { string(data.Auth.ActiveMembership.Membership.Role) }</p>
-					</div>
-					<div class="rounded-2xl border bg-card p-6">
-						<p class="text-sm font-medium text-muted-foreground">Quick links</p>
-						<div class="mt-4 flex flex-wrap gap-3">
-							@button.Button(button.Props{Href: "/app/organizations/new", Variant: button.VariantOutline}) {
-								Create organization
-							}
-							if !data.Auth.ActiveMembership.Tenant.IsPersonal {
-								@button.Button(button.Props{Href: "/app/members", Variant: button.VariantOutline}) {
-									Members
-								}
-							}
-							if !data.Auth.ActiveMembership.Tenant.IsPersonal && data.Auth.ActiveMembership.Membership.Role != iam.RoleMember {
-								@button.Button(button.Props{Href: "/app/invitations/new"}) {
-									New invitation
-								}
-							}
-						</div>
-					</div>
-				</section>
-			}
-		</main>
-	}
-}
-
-templ OrganizationCreatePage(data OrganizationCreatePageData) {
-	@Base("Create organization") {
-		<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-6 py-12">
-			@appHeader(data.Auth, "Create organization", "Your personal tenant stays private. Organizations are collaborative.")
-			<div class="flex flex-wrap gap-3">
-				@button.Button(button.Props{Href: "/app", Variant: button.VariantOutline}) {
-					Back to app
-				}
-			</div>
-			<div class="rounded-3xl border bg-card p-8 shadow-sm">
-				<div class="space-y-6">
-					@errorBanner(data.Error)
-					<form method="post" action="/app/organizations" class="space-y-4">
-						<div class="space-y-2">
-							<label class="text-sm font-medium" for="name">Organization name</label>
-							@input.Input(input.Props{ID: "name", Name: "name", Value: data.Name})
-						</div>
-						@button.Button(button.Props{Type: button.TypeSubmit}) {
+templ dashboardContent(data DashboardPageData) {
+	<main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-12">
+		@appHeader(data.Auth, "Workspace", "Personal tenant first, organizations when needed.")
+		@errorBanner(data.Error)
+		@tenantSwitcher(data.Auth)
+		if data.Auth != nil {
+			<section class="grid gap-4 sm:grid-cols-2">
+				<div class="rounded-2xl border bg-card p-6">
+					<p class="text-sm font-medium text-muted-foreground">{ tenantKindLabel(data.Auth.ActiveMembership.Tenant) }</p>
+					<p class="mt-2 text-2xl font-semibold">{ data.Auth.ActiveMembership.Tenant.Name }</p>
+					<p class="mt-2 text-sm text-muted-foreground">Role: { string(data.Auth.ActiveMembership.Membership.Role) }</p>
+				</div>
+				<div class="rounded-2xl border bg-card p-6">
+					<p class="text-sm font-medium text-muted-foreground">Quick links</p>
+					<div class="mt-4 flex flex-wrap gap-3">
+						@button.Button(button.Props{Href: "/app/organizations/new", Variant: button.VariantOutline}) {
 							Create organization
 						}
-					</form>
-				</div>
-			</div>
-		</main>
-	}
-}
-
-templ MembersPage(data MembersPageData) {
-	@Base("Members") {
-		<main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-12">
-			@appHeader(data.Auth, "Members", "Users with access to the active tenant.")
-			@tenantSwitcher(data.Auth)
-			<div class="flex flex-wrap gap-3">
-				@button.Button(button.Props{Href: "/app", Variant: button.VariantOutline}) {
-					Back to app
-				}
-				if data.Auth != nil && data.Auth.ActiveMembership.Membership.Role != iam.RoleMember {
-					@button.Button(button.Props{Href: "/app/invitations/new"}) {
-						New invitation
-					}
-				}
-			</div>
-			<section class="overflow-hidden rounded-2xl border bg-card">
-				<table class="w-full text-left text-sm">
-					<thead class="border-b bg-muted/40 text-muted-foreground">
-						<tr>
-							<th class="px-4 py-3 font-medium">Email</th>
-							<th class="px-4 py-3 font-medium">Role</th>
-							<th class="px-4 py-3 font-medium">Joined</th>
-						</tr>
-					</thead>
-					<tbody>
-						for _, member := range data.Members {
-							<tr class="border-b last:border-b-0">
-								<td class="px-4 py-3">{ member.Email }</td>
-								<td class="px-4 py-3 capitalize">{ string(member.Role) }</td>
-								<td class="px-4 py-3 text-muted-foreground">{ member.CreatedAt.Format("2006-01-02 15:04") }</td>
-							</tr>
+						if !data.Auth.ActiveMembership.Tenant.IsPersonal {
+							@button.Button(button.Props{Href: "/app/members", Variant: button.VariantOutline}) {
+								Members
+							}
 						}
-					</tbody>
-				</table>
+						if !data.Auth.ActiveMembership.Tenant.IsPersonal && data.Auth.ActiveMembership.Membership.Role != iam.RoleMember {
+							@button.Button(button.Props{Href: "/app/invitations/new"}) {
+								New invitation
+							}
+						}
+					</div>
+				</div>
 			</section>
-		</main>
+		}
+	</main>
+}
+
+templ DashboardPage(data DashboardPageData, partial bool) {
+	if partial {
+		@HtmxFragment("App") {
+			@dashboardContent(data)
+		}
+	} else {
+		@Base("App") {
+			@dashboardContent(data)
+		}
 	}
 }
 
-templ InviteCreatePage(data InvitationCreatePageData) {
-	@Base("New invitation") {
-		<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-6 py-12">
-			@appHeader(data.Auth, "New invitation", "Generate an invite link for this organization.")
-			<div class="flex flex-wrap gap-3">
-				@button.Button(button.Props{Href: "/app/members", Variant: button.VariantOutline}) {
-					Back to members
-				}
-			</div>
-			<div class="rounded-3xl border bg-card p-8 shadow-sm">
-				<div class="space-y-6">
-					@errorBanner(data.Error)
-					if data.InviteURL != "" {
-						<div class="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-4">
-							<p class="text-sm font-medium">Invitation link</p>
-							<p class="break-all text-sm text-muted-foreground">{ data.InviteURL }</p>
-						</div>
+templ organizationCreateContent(data OrganizationCreatePageData) {
+	<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-6 py-12">
+		@appHeader(data.Auth, "Create organization", "Your personal tenant stays private. Organizations are collaborative.")
+		<div class="flex flex-wrap gap-3">
+			@button.Button(button.Props{Href: "/app", Variant: button.VariantOutline}) {
+				Back to app
+			}
+		</div>
+		<div class="rounded-3xl border bg-card p-8 shadow-sm">
+			<div class="space-y-6">
+				@errorBanner(data.Error)
+				<form method="post" action="/app/organizations" class="space-y-4">
+					<div class="space-y-2">
+						<label class="text-sm font-medium" for="name">Organization name</label>
+						@input.Input(input.Props{ID: "name", Name: "name", Value: data.Name, HasError: hasFieldError(data.FieldErrors, "name")})
+						@fieldErrorText(fieldError(data.FieldErrors, "name"))
+					</div>
+					@button.Button(button.Props{Type: button.TypeSubmit}) {
+						Create organization
 					}
-					<form method="post" action="/app/invitations" class="space-y-4">
-						<div class="space-y-2">
-							<label class="text-sm font-medium" for="email">Invitee email</label>
-							@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email})
-						</div>
-						<div class="space-y-2">
-							<label class="text-sm font-medium" for="role">Role</label>
-							<select id="role" name="role" class="h-10 w-full rounded-md border bg-background px-3 text-sm">
-								<option value="member" selected?={ data.Role == iam.RoleMember || data.Role == "" }>member</option>
-								<option value="admin" selected?={ data.Role == iam.RoleAdmin }>admin</option>
-							</select>
-						</div>
-						@button.Button(button.Props{Type: button.TypeSubmit}) {
-							Generate invitation
-						}
-					</form>
-				</div>
+				</form>
 			</div>
-		</main>
+		</div>
+	</main>
+}
+
+templ OrganizationCreatePage(data OrganizationCreatePageData, partial bool) {
+	if partial {
+		@HtmxFragment("Create organization") {
+			@organizationCreateContent(data)
+		}
+	} else {
+		@Base("Create organization") {
+			@organizationCreateContent(data)
+		}
 	}
 }
 
-templ InvitationAcceptPage(data InvitationAcceptPageData) {
-	@pageFrame("Accept invitation") {
+templ membersContent(data MembersPageData) {
+	<main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 py-12">
+		@appHeader(data.Auth, "Members", "Users with access to the active tenant.")
+		@tenantSwitcher(data.Auth)
+		<div class="flex flex-wrap gap-3">
+			@button.Button(button.Props{Href: "/app", Variant: button.VariantOutline}) {
+				Back to app
+			}
+			if data.Auth != nil && data.Auth.ActiveMembership.Membership.Role != iam.RoleMember {
+				@button.Button(button.Props{Href: "/app/invitations/new"}) {
+					New invitation
+				}
+			}
+		</div>
+		<section class="overflow-hidden rounded-2xl border bg-card">
+			<table class="w-full text-left text-sm">
+				<thead class="border-b bg-muted/40 text-muted-foreground">
+					<tr>
+						<th class="px-4 py-3 font-medium">Email</th>
+						<th class="px-4 py-3 font-medium">Role</th>
+						<th class="px-4 py-3 font-medium">Joined</th>
+					</tr>
+				</thead>
+				<tbody>
+					for _, member := range data.Members {
+						<tr class="border-b last:border-b-0">
+							<td class="px-4 py-3">{ member.Email }</td>
+							<td class="px-4 py-3 capitalize">{ string(member.Role) }</td>
+							<td class="px-4 py-3 text-muted-foreground">{ member.CreatedAt.Format("2006-01-02 15:04") }</td>
+						</tr>
+					}
+				</tbody>
+			</table>
+		</section>
+	</main>
+}
+
+templ MembersPage(data MembersPageData, partial bool) {
+	if partial {
+		@HtmxFragment("Members") {
+			@membersContent(data)
+		}
+	} else {
+		@Base("Members") {
+			@membersContent(data)
+		}
+	}
+}
+
+templ inviteCreateContent(data InvitationCreatePageData) {
+	<main class="mx-auto flex min-h-screen w-full max-w-3xl flex-col gap-8 px-6 py-12">
+		@appHeader(data.Auth, "New invitation", "Generate an invite link for this organization.")
+		<div class="flex flex-wrap gap-3">
+			@button.Button(button.Props{Href: "/app/members", Variant: button.VariantOutline}) {
+				Back to members
+			}
+		</div>
+		<div class="rounded-3xl border bg-card p-8 shadow-sm">
+			<div class="space-y-6">
+				@errorBanner(data.Error)
+				if data.InviteURL != "" {
+					<div class="space-y-2 rounded-md border border-primary/20 bg-primary/5 p-4">
+						<p class="text-sm font-medium">Invitation link</p>
+						<p class="break-all text-sm text-muted-foreground">{ data.InviteURL }</p>
+					</div>
+				}
+				<form method="post" action="/app/invitations" class="space-y-4">
+					<div class="space-y-2">
+						<label class="text-sm font-medium" for="email">Invitee email</label>
+						@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email, HasError: hasFieldError(data.FieldErrors, "email")})
+						@fieldErrorText(fieldError(data.FieldErrors, "email"))
+					</div>
+					<div class="space-y-2">
+						<label class="text-sm font-medium" for="role">Role</label>
+						<select id="role" name="role" class={ "h-10 w-full rounded-md border bg-background px-3 text-sm", templ.KV("border-destructive", hasFieldError(data.FieldErrors, "role")) }>
+							<option value="member" selected?={ data.Role == iam.RoleMember || data.Role == "" }>member</option>
+							<option value="admin" selected?={ data.Role == iam.RoleAdmin }>admin</option>
+						</select>
+						@fieldErrorText(fieldError(data.FieldErrors, "role"))
+					</div>
+					@button.Button(button.Props{Type: button.TypeSubmit}) {
+						Generate invitation
+					}
+				</form>
+			</div>
+		</div>
+	</main>
+}
+
+templ InviteCreatePage(data InvitationCreatePageData, partial bool) {
+	if partial {
+		@HtmxFragment("New invitation") {
+			@inviteCreateContent(data)
+		}
+	} else {
+		@Base("New invitation") {
+			@inviteCreateContent(data)
+		}
+	}
+}
+
+templ InvitationAcceptPage(data InvitationAcceptPageData, partial bool) {
+	@pageFrame("Accept invitation", partial) {
 		<div class="space-y-6">
 			<div class="space-y-2 text-center">
 				<h1 class="text-3xl font-semibold tracking-tight">Accept invitation</h1>
@@ -294,15 +358,18 @@ templ InvitationAcceptPage(data InvitationAcceptPageData) {
 					<form method="post" action={ "/invitations/" + data.RawToken + "/accept" } class="space-y-4">
 						<div class="space-y-2">
 							<label class="text-sm font-medium" for="username">Username</label>
-							@input.Input(input.Props{ID: "username", Name: "username", Value: data.Username})
+							@input.Input(input.Props{ID: "username", Name: "username", Value: data.Username, HasError: hasFieldError(data.FieldErrors, "username"), Attributes: templ.Attributes{"autocomplete": "username"}})
+							@fieldErrorText(fieldError(data.FieldErrors, "username"))
 						</div>
 						<div class="space-y-2">
 							<label class="text-sm font-medium" for="email">Email</label>
-							@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email})
+							@input.Input(input.Props{ID: "email", Name: "email", Type: input.TypeEmail, Value: data.Email, HasError: hasFieldError(data.FieldErrors, "email"), Attributes: templ.Attributes{"autocomplete": "email"}})
+							@fieldErrorText(fieldError(data.FieldErrors, "email"))
 						</div>
 						<div class="space-y-2">
 							<label class="text-sm font-medium" for="password">Password</label>
-							@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword})
+							@input.Input(input.Props{ID: "password", Name: "password", Type: input.TypePassword, HasError: hasFieldError(data.FieldErrors, "password"), Attributes: templ.Attributes{"autocomplete": "current-password"}})
+							@fieldErrorText(fieldError(data.FieldErrors, "password"))
 						</div>
 						<p class="text-xs text-muted-foreground">If the account already exists, use its password. Otherwise the username will be used to create your personal tenant.</p>
 						@button.Button(button.Props{Type: button.TypeSubmit, FullWidth: true}) {
