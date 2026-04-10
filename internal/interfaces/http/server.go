@@ -9,6 +9,9 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	appiam "github.com/kvitrvn/go-ygg/internal/application/iam"
+	"github.com/kvitrvn/go-ygg/internal/interfaces/http/web"
 )
 
 // Server wraps net/http.Server with graceful shutdown support.
@@ -16,8 +19,8 @@ type Server struct {
 	httpServer *http.Server
 }
 
-func NewServer(addr string) *Server {
-	router := newRouter()
+func NewServer(addr string, iamService *appiam.Service, cookieConfig web.CookieConfig, appBaseURL string, sessionTTL time.Duration) *Server {
+	router := newRouter(iamService, cookieConfig, appBaseURL, sessionTTL)
 	return &Server{
 		httpServer: &http.Server{
 			Addr:         addr,

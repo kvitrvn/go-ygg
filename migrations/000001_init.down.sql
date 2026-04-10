@@ -1,4 +1,5 @@
--- 000001_init.down.sql
--- Revert the changes from 000001_init.up.sql.
--- Example:
--- DROP TABLE IF EXISTS examples;
+DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS invitations;
+DROP TABLE IF EXISTS memberships;
+DROP TABLE IF EXISTS tenants;
+DROP TABLE IF EXISTS users;

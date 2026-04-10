@@ -12,6 +12,8 @@ import (
 type Config struct {
 	Server   ServerConfig
 	Database DatabaseConfig
+	App      AppConfig
+	Auth     AuthConfig
 	Log      LogConfig
 }
 
@@ -22,6 +24,17 @@ type ServerConfig struct {
 
 type DatabaseConfig struct {
 	DSN string `env:"GO_YGG_DATABASE_DSN"`
+}
+
+type AppConfig struct {
+	BaseURL string `env:"GO_YGG_APP_BASE_URL" envDefault:"http://localhost:8080"`
+}
+
+type AuthConfig struct {
+	CookieName    string `env:"GO_YGG_AUTH_COOKIE_NAME" envDefault:"go_ygg_session"`
+	CookieSecure  bool   `env:"GO_YGG_AUTH_COOKIE_SECURE" envDefault:"false"`
+	SessionTTL    string `env:"GO_YGG_AUTH_SESSION_TTL" envDefault:"168h"`
+	InvitationTTL string `env:"GO_YGG_AUTH_INVITATION_TTL" envDefault:"168h"`
 }
 
 type LogConfig struct {

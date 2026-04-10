@@ -8,7 +8,7 @@ This blueprint is currently wired for PostgreSQL migrations through [`golang-mig
 - migration database driver: `github.com/golang-migrate/migrate/v4/database/postgres`
 - default local database: the PostgreSQL service from `docker-compose.yml`
 
-The runtime persistence layer is still intentionally incomplete. [`internal/infrastructure/persistence/example_repository.go`](../../internal/infrastructure/persistence/example_repository.go) is only a placeholder and does not establish a real application data access layer yet.
+The project now includes a first real PostgreSQL-backed persistence slice for the `iam` bounded context in [`internal/infrastructure/persistence/postgres.go`](../../internal/infrastructure/persistence/postgres.go). The old example repository remains a placeholder for the sample bounded context only.
 
 ## What The `serve` Command Does
 
@@ -73,6 +73,21 @@ migrations/
   000001_init.down.sql
 ```
 
+That initial migration creates the current auth schema:
+
+- `users`
+- `tenants`
+- `memberships`
+- `invitations`
+- `sessions`
+
+The current schema models:
+
+- a global `users.username` unique identifier in addition to unique email
+- a `tenants.is_personal` flag to distinguish personal tenants from collaborative organizations
+- memberships that link users to both their personal tenant and any organizations they join
+- invitations that apply only to collaborative organizations
+
 Follow the existing convention for new migrations:
 
 - 6-digit sequential numbering
@@ -101,6 +116,16 @@ export GO_YGG_DATABASE_DSN="postgres://user:pass@localhost:5432/dbname?sslmode=d
 
 In the Docker Compose setup, the app container defaults to the PostgreSQL service defined in `docker-compose.yml`.
 
+Auth-related runtime config also depends on:
+
+```bash
+GO_YGG_APP_BASE_URL=http://localhost:8080
+GO_YGG_AUTH_COOKIE_NAME=go_ygg_session
+GO_YGG_AUTH_COOKIE_SECURE=false
+GO_YGG_AUTH_SESSION_TTL=168h
+GO_YGG_AUTH_INVITATION_TTL=168h
+```
+
 ## If You Change Database Engine Later
 
 The blueprint is not database-agnostic out of the box today.
@@ -108,6 +133,7 @@ The blueprint is not database-agnostic out of the box today.
 If you move away from PostgreSQL, you will need to update at least:
 
 - the blank import in [`internal/interfaces/cli/migrate.go`](../../internal/interfaces/cli/migrate.go)
+- the runtime SQL driver opened in [`internal/infrastructure/persistence/postgres.go`](../../internal/infrastructure/persistence/postgres.go)
 - the DSN format in your environment
 - the local container setup in `docker-compose.yml`
 - your real persistence implementation once you replace the example repository

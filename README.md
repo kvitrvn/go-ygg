@@ -13,6 +13,8 @@
 - env-only configuration
 - HTTP and CLI adapters
 - migration plumbing
+- local authentication with cookie sessions
+- personal tenants, organizations, RBAC, and invitation links
 - templ + Tailwind asset generation
 - templUI CLI integration without Node.js/npm
 - a Docker-based local workflow
@@ -24,7 +26,7 @@ The repository already contains the technical skeleton. The business domain is i
 - A single executable entrypoint in [`cmd/main.go`](cmd/main.go)
 - A minimal CLI with `serve`, `version`, and `migrate` commands
 - HTTP server bootstrap and graceful shutdown
-- A sample inbound HTTP adapter with `/`, `/healthz`, and `/version`
+- A sample inbound HTTP adapter with local auth pages, tenant switching, organization creation, `/healthz`, and `/version`
 - Environment-driven config loading via `GO_YGG_*`
 - Migration commands wired through `golang-migrate`
 - A placeholder `example` bounded context to show package boundaries
@@ -37,7 +39,7 @@ The repository already contains the technical skeleton. The business domain is i
 - Your real bounded contexts, entities, value objects, and use cases
 - Real repository implementations and database wiring
 - Request/response DTOs beyond the placeholder handlers
-- Authentication, authorization, and business-specific policies
+- Password reset, email delivery, MFA, SSO, username changes, and deeper business-specific policies
 - Observability, deployment, and production hardening specific to your system
 
 The current `internal/domain/example` and `internal/application/example` packages are placeholders. They exist to demonstrate structure, not to model a real product domain.
@@ -209,6 +211,11 @@ Default values are documented in `.env.example`:
 GO_YGG_SERVER_HOST=0.0.0.0
 GO_YGG_SERVER_PORT=8080
 GO_YGG_DATABASE_DSN=postgres://app:secret@db:5432/app?sslmode=disable
+GO_YGG_APP_BASE_URL=http://localhost:8080
+GO_YGG_AUTH_COOKIE_NAME=go_ygg_session
+GO_YGG_AUTH_COOKIE_SECURE=false
+GO_YGG_AUTH_SESSION_TTL=168h
+GO_YGG_AUTH_INVITATION_TTL=168h
 GO_YGG_LOG_LEVEL=info
 GO_YGG_LOG_FORMAT=json
 POSTGRES_USER=app
